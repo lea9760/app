@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Available Dress Stock</title>
+  <style>
+    :root {
+      --bg-color: #f5f5f5;
+      --text-color: #000;
+      --card-color: #fff;
+      --primary-color: #0077cc;
+      --button-color: #28a745;
+    }
+
+    body.dark-mode {
+      --bg-color: #121212;
+      --text-color: #f0f0f0;
+      --card-color: #1e1e1e;
+      --primary-color: #3399ff;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      text-align: center;
+      padding: 20px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--card-color);
+      box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
+      margin-top: 20px;
+    }
+
+    th, td {
+      padding: 10px;
+      border-bottom: 1px solid #ddd;
+    }
+
+    th {
+      background: var(--primary-color);
+      color: white;
+    }
+
+    select, button {
+      padding: 6px 10px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      cursor: pointer;
+    }
+
+    button {
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+    }
+
+    button:hover {
+      background-color: #005fa3;
+    }
+
+    .add-button {
+      margin-top: 20px;
+      background-color: var(--button-color);
+    }
+
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 15px;
+      flex-wrap: wrap;
+    }
+
+    .toolbar button, .toolbar select {
+      font-size: 16px;
+    }
+
+    img {
+      cursor: pointer;
+      border-radius: 6px;
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <button onclick="toggleDarkMode()" title="Toggle Theme" id="themeBtn">🌞</button>
+    <select id="langSelect" onchange="translateTable()">
+      <option value="en">English</option>
+      <option value="tr">Türkçe</option>
+      <option value="ar">العربية</option>
+    </select>
+    <button onclick="saveData()">Save</button>
+  </div>
+
+  <h1 id="title">Available Dress Stock</h1>
+  <table>
+    <thead>
+      <tr id="headerRow">
+        <th>Dress Code</th>
+        <th>Pic</th>
+        <th>Tag Price ($)</th>
+        <th>Location</th>
+        <th>Color</th>
+        <th>Size</th>
+        <th>Stock</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="dressTable"></tbody>
+  </table>
+  <button class="add-button" onclick="addNewDress()">+ Add New Dress Code</button>
+
+  <script>
+    const LOCATIONS = ["KSA", "Factory", "Dubai", "Depot"];
+    let TAG_PRICE = 1000;
+    let data = JSON.parse(localStorage.getItem("dressData")) || [];
+
+    const translations = {
+      en: ["Dress Code", "Pic", "Tag Price ($)", "Location", "Color", "Size", "Stock", "Actions", "Available Dress Stock"],
+      tr: ["Elbise Kodu", "Resim", "Etiket Fiyatı ($)", "Konum", "Renk", "Beden", "Stok", "İşlemler", "Mevcut Elbise Stoğu"],
+      ar: ["رمز الفستان", "صورة", "سعر البطاقة ($)", "الموقع", "اللون", "المقاس", "المخزون", "إجراءات", "مخزون الفساتين المتاح"]
+    };
+
+    function toggleDarkMode() {
+      document.body.classList.toggle("dark-mode");
+      document.getElementById("themeBtn").textContent = document.body.classList.contains("dark-mode") ? "🌙" : "🌞";
+    }
+
+    function saveData() {
+      localStorage.setItem("dressData", JSON.stringify(data));
+      alert("Data saved!");
+    }
+
+    function translateTable() {
+      const lang = document.getElementById("langSelect").value;
+      const headerCells = document.querySelectorAll("#headerRow th");
+      translations[lang].forEach((t, i) => {
+        if (headerCells[i]) headerCells[i].textContent = t;
+      });
+      document.getElementById("title").textContent = translations[lang][8];
+    }
+
+    function updateTable() {
+      const tbody = document.getElementById("dressTable");
+      tbody.innerHTML = "";
+
+      data.forEach(dress => {
+        const loc = Object.keys(dress.locations)[0];
+        const locData = dress.locations[loc];
+        const color = Object.keys(locData.colors)[0];
+        const size = Object.keys(locData.colors[color].sizes)[0];
+        const stock = locData.colors[color].sizes[size];
+
+        const row = document.createElement("tr");
+        const imageSrc = dress.img || "https://via.placeholder.com/50";
+
+        row.innerHTML = `
+          <td class="editable" data-type="code">${dress.code}</td>
+          <td>
+            <img src="${imageSrc}" width="50" ondblclick="this.nextElementSibling.click()" />
+            <input type="file" accept="image/*" onchange="handleImageUpload(event, '${dress.code}')">
+          </td>
+          <td class="editable" data-type="tag-price">${TAG_PRICE}</td>
+          <td>
+            <select class="locationSelect" onchange="handleLocationChange(this, '${dress.code}')">
+              ${LOCATIONS.map(l => `<option value="${l}">${l}</option>`).join("")}
+            </select>
+          </td>
+          <td>
+            <select class="colorSelect">${Object.keys(locData.colors).map(c => `<option value="${c}">${c}</option>`).join("")}</select>
+          </td>
+          <td>
+            <select class="sizeSelect">${Object.keys(locData.colors[color].sizes).map(s => `<option value="${s}">${s}</option>`).join("")}</select>
+          </td>
+          <td class="editable" data-type="stock">${stock}</td>
+          <td><button onclick="deleteDress('${dress.code}')">Delete</button></td>
+        `;
+        tbody.appendChild(row);
+      });
+
+      attachListeners();
+    }
+
+    function handleImageUpload(event, code) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dress = data.find(d => d.code === code);
+        dress.img = reader.result;
+        updateTable();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function handleLocationChange(select, code) {
+      const row = select.closest("tr");
+      const dress = data.find(d => d.code === code);
+      const loc = select.value;
+      const locData = dress.locations[loc];
+      if (!locData) return;
+
+      const colorSelect = row.querySelector('.colorSelect');
+      const sizeSelect = row.querySelector('.sizeSelect');
+      const stockCell = row.querySelector('[data-type="stock"]');
+
+      const color = Object.keys(locData.colors)[0];
+      const size = Object.keys(locData.colors[color].sizes)[0];
+      const stock = locData.colors[color].sizes[size];
+
+      colorSelect.innerHTML = Object.keys(locData.colors).map(c => `<option value="${c}">${c}</option>`).join("");
+      sizeSelect.innerHTML = Object.keys(locData.colors[color].sizes).map(s => `<option value="${s}">${s}</option>`).join("");
+      stockCell.textContent = stock;
+    }
+
+    function attachListeners() {
+      document.querySelectorAll("#dressTable tr").forEach(row => {
+        const code = row.querySelector('[data-type="code"]').textContent.trim();
+        const dress = data.find(d => d.code === code);
+
+        row.querySelectorAll(".editable").forEach(cell => {
+          cell.ondblclick = () => {
+            const oldValue = cell.textContent.trim();
+            const dataType = cell.dataset.type;
+            const input = document.createElement("input");
+            input.value = oldValue;
+            cell.innerHTML = "";
+            cell.appendChild(input);
+            input.focus();
+
+            input.addEventListener("blur", () => {
+              const newValue = input.value.trim();
+              cell.innerHTML = newValue;
+
+              const loc = row.querySelector(".locationSelect").value;
+              const color = row.querySelector(".colorSelect").value;
+              const size = row.querySelector(".sizeSelect").value;
+
+              switch (dataType) {
+                case "tag-price":
+                  TAG_PRICE = parseFloat(newValue);
+                  break;
+                case "stock":
+                  dress.locations[loc].colors[color].sizes[size] = parseInt(newValue);
+                  break;
+                case "code":
+                  dress.code = newValue;
+                  break;
+              }
+
+              saveData();
+            });
+
+            input.addEventListener("keydown", e => {
+              if (e.key === "Enter") input.blur();
+            });
+          };
+        });
+      });
+    }
+
+    function deleteDress(code) {
+      const index = data.findIndex(d => d.code === code);
+      if (index !== -1) data.splice(index, 1);
+      updateTable();
+    }
+
+    function addNewDress() {
+      const code = prompt("Enter Dress Code:");
+      if (!code) return alert("Dress code is required.");
+      const dress = { code, locations: {} };
+
+      for (const location of LOCATIONS) {
+        const locColors = {};
+        const colors = prompt(`Colors for ${location} (comma separated):`);
+        if (!colors) continue;
+        for (const color of colors.split(",").map(c => c.trim())) {
+          const sizes = prompt(`Sizes for ${color} in ${location} (comma separated):`);
+          if (!sizes) continue;
+          const sizeStock = {};
+          for (const size of sizes.split(",").map(s => s.trim())) {
+            const stock = prompt(`Stock for ${color} - ${size} in ${location}:`);
+            sizeStock[size] = parseInt(stock || "0");
+          }
+          locColors[color] = { sizes: sizeStock };
+        }
+        dress.locations[location] = { colors: locColors };
+      }
+
+      data.push(dress);
+      saveData();
+      updateTable();
+    }
+
+    // Initialize
+    updateTable();
+  </script>
+</body>
+</html>
