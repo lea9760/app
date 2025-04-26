@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Draft App - Shop Links</title>
+  <style>
+    :root {
+      --bg: #f4f1da;
+      --card: #ffffff;
+      --text: #43544b;
+      --accent: #ad9362;
+      --button: #576f59;
+    }
+
+    body.dark-mode {
+      --bg: #43544b;
+      --card: #576f59;
+      --text: #f4f1da;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      color: var(--accent);
+    }
+
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      padding: 12px 16px;
+      background-color: #576f59;
+      color: white;
+    }
+
+    .toolbar select,
+    .toolbar button {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 6px;
+      margin: 5px;
+      background: var(--button);
+      color: white;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    table {
+      width: 100%;
+      background: var(--card);
+      border-radius: 8px;
+      overflow: hidden;
+      border-collapse: collapse;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    th, td {
+      padding: 10px;
+      border-bottom: 1px solid #ddd;
+      text-align: center;
+    }
+
+    th {
+      background: var(--accent);
+      color: white;
+    }
+
+    .status-ok {
+      background: #576f59;
+      color: white;
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+
+    .status-warning {
+      background: #ad9362;
+      color: white;
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    img {
+      width: 50px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .add-buttons {
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    .add-buttons button {
+      margin: 0 10px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="toolbar">
+    <select class="shop-dropdown" onchange="openShopLink(this)">
+      <option selected disabled>Shop Links</option>
+      <option value="https://fostani.com">Fostani</option>
+      <option value="https://layalina.com">Layalina boutique. Com</option>
+      <option value="https://district5boutique.com">District 5 boutique</option>
+      <option value="https://tiadress.com">Tia dress</option>
+      <option value="https://poshmark.com">Poshmark. Com</option>
+      <option value="https://biancanera.com">Bianca nera.</option>
+      <option value="https://incanto.com">Incanto</option>
+      <option value="https://onlinemarkat.com">Online markat</option>
+      <option value="https://coutureshopla.com">Couture shopla</option>
+      <option value="https://newyorkdress.com">New York dress</option>
+    </select>
+
+    <div>
+      <button id="themeBtn" onclick="toggleTheme()">🌞</button>
+      <select id="langSelect" onchange="translateTable()">
+      <option value="en">English</option>
+      <option value="tr">Türkçe</option>
+      <option value="ar">العربية</option>
+    </select>
+      <button onclick="save()">💾 Save</button>
+    </div>
+  </div>
+
+  <h1 id="title">Available Dress Stock</h1>
+
+  <table id="stockTable">
+    <thead>
+      <tr id="headRow">
+        <th>Dress Code</th>
+        <th>Pic</th>
+        <th>Tag Price ($)</th>
+        <th>Location</th>
+        <th>Listing Price ($)</th>
+        <th>Discount (%)</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <div class="add-buttons">
+    <button onclick="addDress()">+ Add New Dress</button>
+    <button onclick="duplicate()">⧉ Duplicate Last</button>
+  </div>
+
+  <script>
+    const LOCATIONS = ["Fostani", "Layali Boutique. Com", "District 5 Boutique", "Tia Dress", "Poshmark. Com", "Bianca nera.", "Incanto", "Online markat", "Couture shopla", "New York dress"];
+    let TAG_PRICE = 1000;
+    let dresses = JSON.parse(localStorage.getItem("dresses") || "[]");
+
+    const translations = {
+      en: ["Dress Code", "Pic", "Tag Price ($)", "Location", "Listing Price", "Discount", "Status", "Actions"],
+      tr: ["Elbise Kodu", "Resim", "Etiket Fiyatı ($)", "Konum", "Listeleme Fiyatı", "indirim", "dürüm", "İşlemler"],
+      ar: ["رمز الفستان", "صورة", "سعر البطاقة ($)", "الموقع", "السعر المعروض", "الخصم", "الحالة", "إجراءات"]
+    };
+
+    function openShopLink(select) {
+      const url = select.value;
+      if (url) {
+        window.open(url, '_blank');
+        select.selectedIndex = 0;
+      }
+    }
+
+    function save() {
+      localStorage.setItem("dresses", JSON.stringify(dresses));
+      alert("Saved!");
+    }
+
+    function toggleTheme() {
+      document.body.classList.toggle("dark-mode");
+      const btn = document.getElementById("themeBtn");
+      btn.textContent = document.body.classList.contains("dark-mode") ? "🌙" : "🌞";
+    }
+
+function translateTable() {
+      const lang = document.getElementById("langSelect").value;
+      const headerCells = document.querySelectorAll("#headRow th");
+      translations[lang].forEach((t, i) => {
+        if (headerCells[i]) headerCells[i].textContent = t;
+      });
+      document.getElementById("title").textContent = translations[lang][7];
+    }
+
+    function render() {
+      const tbody = document.querySelector("#stockTable tbody");
+      tbody.innerHTML = "";
+      dresses.forEach((d, index) => {
+        const loc = d.currentLocation || LOCATIONS[0];
+        const locData = d.locations?.[loc] || { price: "", discount: "" };
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td ondblclick="editCell(this, 'code', ${index})">${d.code || ""}</td>
+          <td>
+            <img src="${d.img || 'https://via.placeholder.com/50'}" ondblclick="uploadImage(${index}, this)">
+            <input type="file" accept="image/*" onchange="readImage(event, ${index})">
+          </td>
+          <td ondblclick="editCell(this, 'tag', ${index})">${TAG_PRICE}</td>
+          <td>
+            <select onchange="changeLoc(${index}, this.value)">
+              ${LOCATIONS.map(l => `<option ${l === loc ? 'selected' : ''}>${l}</option>`).join("")}
+            </select>
+          </td>
+          <td ondblclick="editCell(this, 'price', ${index}, '${loc}')">${locData.price}</td>
+          <td ondblclick="editCell(this, 'discount', ${index}, '${loc}')">${locData.discount}</td>
+          <td><span class="${getStatusClass(locData.price, locData.discount)}">${getStatus(locData.price, locData.discount)}</span></td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    function getStatusClass(price, discount) {
+      if (!price || !discount) return "status-ok";
+      const priceDiff = TAG_PRICE - price;
+      return (+discount > 10 || priceDiff > 50) ? "status-warning" : "status-ok";
+    }
+
+    function getStatus(price, discount) {
+      if (!price || !discount) return "OK";
+      const priceDiff = TAG_PRICE - price;
+      return (+discount > 10 || priceDiff > 50) ? "CHECK!" : "OK";
+    }
+
+    function changeLoc(index, newLoc) {
+      dresses[index].currentLocation = newLoc;
+      render();
+    }
+
+    function editCell(cell, key, index, loc) {
+      const oldValue = cell.textContent;
+      cell.innerHTML = `<input type="text" value="${oldValue}" onblur="saveEdit(this, '${key}', ${index}, '${loc || ""}')">`;
+      cell.querySelector("input").focus();
+    }
+
+    function saveEdit(input, key, index, loc) {
+      const value = input.value;
+      const d = dresses[index];
+      if (key === "code") d.code = value;
+      else if (key === "tag") TAG_PRICE = +value;
+      else {
+        if (!d.locations) d.locations = {};
+        if (!d.locations[loc]) d.locations[loc] = {};
+        d.locations[loc][key] = value;
+      }
+      render();
+    }
+
+    function uploadImage(index, imgElement) {
+      imgElement.nextElementSibling.click();
+    }
+
+    function readImage(event, index) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        dresses[index].img = e.target.result;
+        render();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function addDress() {
+      dresses.push({ code: "", img: "", locations: {}, currentLocation: LOCATIONS[0] });
+      render();
+    }
+
+    function duplicate() {
+      if (dresses.length === 0) return;
+      const copy = JSON.parse(JSON.stringify(dresses[dresses.length - 1]));
+      dresses.push(copy);
+      render();
+    }
+
+    // Initial render
+    render();
+  </script>
+</body>
+</html>
